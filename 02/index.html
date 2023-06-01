@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+    <script src="script.js" type="module"></script>
+    <style>
+      * {margin: 0; padding: 0;}
+      html, body {
+        overflow: hidden;
+        font-size: 0.625rem;
+      }
+      .pad {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 20.0rem;
+        height: 20.0rem;
+        padding: 1.0rem;
+      }
+      .pad svg {
+        pointer-events: none;
+        opacity: .25;
+      }
+      .pad svg._active {
+        pointer-events: auto;
+        opacity: 1;
+      }
+      @media screen and (max-width: 415px) {
+        .pad {
+          width: 18.0rem;
+          height: 18.0rem;
+        }
+        .pad svg {
+          width: 100%;
+        }
+      }
+      .gauge {
+        position: absolute;
+        font-size: 1.6rem;
+        width: 90%;
+        top: -1rem;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .gauge._hidden {
+        display: none;
+      }
+      .gauge[value="100"] {
+        animation: luminance 1s ease infinite;
+      }
+      @keyframes luminance {
+        0% {filter: drop-shadow(0 0 0 white)}
+        50% {filter: drop-shadow(0 0 5px white)}
+        100% {filter: drop-shadow(0 0 0 white)}
+      }
+      .unleash {
+        display: none;
+        position: absolute;
+        inset: calc(50% - 25%);
+        width: 50%;
+        height: 50%;
+        border-radius: 50%;
+        background-color: #fff;
+        font-size: 1.6rem;
+        border: 1px solid currentColor;
+      }
+      .unleash._visible {
+        display: block;
+      }
+      .controller {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        font-size: 1.8rem;
+      }
+      @media screen and (max-width: 415px) {
+        .controller {
+          display: block;
+        }
+      }
+      .mode {
+        padding: 1em;
+      }
+      .mode input {
+        margin-right: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="webgl"></div>
+    <div class="controller">
+      <div class="mode">
+        <div class="mode__item"><label><input type="radio" value="auto" name="mode" checked>auto</label></div>
+        <div class="mode__item"><label><input type="radio" value="charge" name="mode">charge</label></div>
+        <div class="mode__item"><label><input type="radio" value="handle" name="mode">handle</label></div>
+      </div>
+      <div class="mode">
+        <div class="mode__item"><label><input type="radio" value="up" name="turn">上を向く</label></div>
+        <div class="mode__item"><label><input type="radio" value="normal" name="turn" checked>元に戻す</label></div>
+        <div class="mode__item"><label><input type="radio" value="down" name="turn">下を向く</label></div>
+      </div>
+      <div class="mode">
+        <div class="mode__item"><label><input type="radio" value="stop" name="swing" checked>止める</label></div>
+        <div class="mode__item"><label><input type="radio" value="narrow" name="swing">横振り15度</label></div>
+        <div class="mode__item"><label><input type="radio" value="wide" name="swing">横振り45度</label></div>
+      </div>
+    </div>
+
+    <div class="pad">
+      <progress id="gauge" class="gauge _hidden" max="100" value="0"> 0% </progress>
+      <svg id="pad" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 350 350">
+        <defs>
+        <style>
+          .cls-1{
+            fill:transparent;
+            stroke:black;
+            pointer-events: auto;
+          }
+          @media (hover: hover) {
+            ._touch .cls-1:hover {
+              fill: white;
+            }
+          }
+          [data-pos="1"] #_1,
+          [data-pos="2"] #_2,
+          [data-pos="3"] #_3,
+          [data-pos="4"] #_4,
+          [data-pos="5"] #_5,
+          [data-pos="6"] #_6,
+          [data-pos="7"] #_7,
+          [data-pos="8"] #_8
+           {fill: white}
+        </style>
+        </defs>
+        <path id="_1" class="cls-1" d="m175,155c2.36,0,4.62.42,6.72,1.17L241.06,12.91C220.68,4.59,198.37,0,175,0s-45.67,4.59-66.06,12.91l59.34,143.27c2.1-.75,4.35-1.18,6.71-1.18Z"/>
+        <path id="_2" class="cls-1" d="m242.91,13.67l-59.34,143.27c4.15,1.98,7.51,5.35,9.49,9.5l143.28-59.35c-17.72-42.04-51.39-75.7-93.43-93.42Z"/>
+        <path id="_3" class="cls-1" d="m337.09,108.94l-143.27,59.34c.75,2.1,1.18,4.35,1.18,6.71s-.42,4.62-1.17,6.72l143.27,59.34c8.32-20.38,12.91-42.68,12.91-66.06s-4.59-45.67-12.91-66.06Z"/>
+        <path id="_4" class="cls-1" d="m193.06,183.56c-1.98,4.15-5.35,7.51-9.5,9.49l59.35,143.28c42.04-17.72,75.7-51.39,93.42-93.43l-143.27-59.34Z"/>
+        <path id="_5" class="cls-1" d="m175,195c-2.36,0-4.62-.42-6.72-1.17l-59.34,143.27c20.38,8.32,42.68,12.91,66.06,12.91s45.67-4.59,66.06-12.91l-59.34-143.27c-2.1.75-4.35,1.18-6.71,1.18Z"/>
+        <path id="_6" class="cls-1" d="m166.44,193.06c-4.15-1.98-7.51-5.35-9.49-9.5L13.67,242.91c17.72,42.04,51.39,75.7,93.43,93.42l59.34-143.27Z"/>
+        <path id="_7" class="cls-1" d="m156.18,181.71c-.75-2.1-1.18-4.35-1.18-6.71s.42-4.62,1.17-6.72L12.91,108.94C4.59,129.32,0,151.63,0,175s4.59,45.67,12.91,66.06l143.27-59.34Z"/>
+        <path id="_8" class="cls-1" d="m156.94,166.44c1.98-4.15,5.35-7.51,9.5-9.49L107.09,13.67C65.05,31.38,31.39,65.05,13.67,107.09l143.27,59.34Z"/>
+      </svg>
+      <button id="unleash" class="unleash" type="button">unleash</button>
+    </div>
+  </body>
+</html>
+
