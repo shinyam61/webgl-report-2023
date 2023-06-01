@@ -308,12 +308,12 @@ class App3 {
     })
 
     this.unleash.addEventListener('click', () => {
-      this.unleash.classList.remove('_visible')
       gsap.to(this.gauge, {
         value: 0,
         duration: 1,
         onComplete: () => {
           this.pad.controle.value = 0;
+          this.unleash.classList.remove('_visible')
         }
       })
       gsap.to(this.funGroup.rotation, {
