@@ -131,6 +131,9 @@ class App {
       inputEl.addEventListener('change', () => {
         console.log(inputEl.value)
         this.changePolygonShape = inputEl.value == 'polygon';
+        if (this.changePolygonShape) {
+          this.coefficient = 1;
+        }
       })
     })
   }
