@@ -28,9 +28,10 @@ void main() {
     e = reflect(e, n);
     // 反射光
     vec3 s = vColor.rgb * d1;
+    float blackS1 = clamp(dot(e, normalize(lightPos[7])), 0.0, 1.0);
     for(int i = 0; i < 8; i++) {
       float s1 = clamp(dot(e, normalize(lightPos[i])), 0.0, 1.0);
-      s += lightColors[i] * pow(s1, 10.0);
+      s += lightColors[i] * pow(s1, 10.0) - lightColors[i] * pow(blackS1, 30.0) * .5;
     }
 
     // 最終出力
