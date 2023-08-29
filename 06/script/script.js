@@ -234,7 +234,7 @@ class App {
   setupGeometry() {
     // トーラスのジオメトリ情報を取得
     const row = 256;
-    const column = 100;
+    const column = 8;
     const innerRadius = 0.4;
     const outerRadius = 0.8;
     const color = [1.0, 1.0, 1.0, 1.0];
@@ -386,30 +386,26 @@ class App {
       [1.0, 1.0, 1.0],
       [-1.0, -1.0, -1.0],
 
-      // [-1.0, 1.0, -1.0],
-      // [1.0, -1.0, 1.0],
+      [-1.0, 1.0, -1.0],
+      [1.0, -1.0, 1.0],
 
-      // [1.0, 1.0, -1.0],
-      // [-1.0, -1.0, 1.0],
+      [1.0, 1.0, -1.0],
+      [-1.0, -1.0, 1.0],
 
-      // [1.0, -1.0, -1.0],
-      // [-1.0, 1.0, 1.0],
+      [1.0, -1.0, -1.0],
+      [-1.0, 1.0, 1.0],
     ];
     // 光源の色
     const lightColors = [
       [1.0, .0, .0], // red
       [.0, 1.0, .0], // green
-      // [.0, .0, 1.0], // blue
-      // [1.0, 1.0, .0], // syan
-      // [.0, 1.0, 1.0], // yellow
-      // [1.0, .0, 1.0], // マゼンダ
-      // [1.0, 1.0, 1.0], // white
-      // [.5, .5, .0], // black
+      [.0, .0, 1.0], // blue
+      [1.0, 1.0, .0], // cyan
+      [.0, 1.0, 1.0], // yellow
+      [1.0, .0, 1.0], // magenta
+      [1.0, 1.0, 1.0], // white
+      [.0, .0, .0], // black
     ]
-
-    gl.uniform1fv(this.uniformLocation.lightPos, lightPos.flat());
-    gl.uniform1fv(this.uniformLocation.lightColors, lightColors.flat());
-    gl.uniform1f(this.uniformLocation.time, nowTime);
 
     // トーラスの描画
     gl.uniformMatrix4fv(this.uniformLocation.mMatrix, false, m);
@@ -423,7 +419,16 @@ class App {
     if (this.isRotation !== true) {
       lm = m4.rotate(lm, nowTime, rotateAxis)
     }
-    gl.uniformMatrix4fv(this.uniformLocation.lightRotateMatrix, false, lm);
+
+    const lightMoveds = lightPos.map(lp => {
+      const [x, y, z] = m4.toVecIV(lm, [...lp, 1.0]);
+      return [x, y, z];
+    });
+    console.log(lightMoveds)
+
+    gl.uniform3fv(this.uniformLocation.lightPos, lightMoveds.flat());
+    gl.uniform3fv(this.uniformLocation.lightColors, lightColors.flat());
+    gl.uniform1f(this.uniformLocation.time, nowTime);
 
     WebGLUtility.enableBuffer(gl, this.torusVBO, this.attributeLocation, this.attributeStride, this.torusIBO);
     gl.drawElements(gl.TRIANGLES, this.torusGeometry.index.length, gl.UNSIGNED_SHORT, 0);
