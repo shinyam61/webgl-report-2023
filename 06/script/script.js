@@ -234,7 +234,7 @@ class App {
   setupGeometry() {
     // トーラスのジオメトリ情報を取得
     const row = 256;
-    const column = 4;
+    const column = 100;
     const innerRadius = 0.4;
     const outerRadius = 0.8;
     const color = [1.0, 1.0, 1.0, 1.0];
