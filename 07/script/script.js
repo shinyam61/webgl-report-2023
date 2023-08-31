@@ -204,8 +204,10 @@ class App {
       })
 
       this.mousepos = [
-        (evt.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2),
-        ((window.innerHeight / 2) - evt.clientY) / (window.innerHeight / 2)
+        evt.clientX / window.innerWidth,
+        evt.clientY / window.innerHeight
+        // (evt.clientX - (window.innerWidth / 2)) / (window.innerWidth / 2),
+        // ((window.innerHeight / 2) - evt.clientY) / (window.innerHeight / 2)
       ]
     })
   }
@@ -335,6 +337,7 @@ class App {
       // mvpMatrix: gl.getUniformLocation(this.renderProgram, 'mvpMatrix'), // 
       textureUnit1: gl.getUniformLocation(this.renderProgram, 'textureUnit1'), // テクスチャユニット
       mouse: gl.getUniformLocation(this.renderProgram, 'mouse'), // テクスチャユニット
+      resolution: gl.getUniformLocation(this.renderProgram, 'resolution'), // テクスチャユニット
       // time: gl.getUniformLocation(this.renderProgram, 'time'),   // 
     };
   }
