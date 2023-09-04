@@ -65,25 +65,29 @@ class App {
      * @type {WebGLProgram}
      */
     this.renderProgram = null;
-    this.offscreenProgram = null;
+    this.offscreenProgram1 = null;
+    this.offscreenProgram2 = null;
     /**
      * attribute 変数のロケーションを保持する配列
      * @type {Array.<number>}
      */
     this.renderAttLocation = null;
-    this.offscreenAttLocation = null;
+    this.offscreen1AttLocation = null;
+    this.offscreen2AttLocation = null;
     /**
      * attribute 変数のストライドの配列
      * @type {Array.<number>}
      */
     this.renderAttStride = null;
-    this.offscreenAttStride = null;
+    this.offscreen1AttStride = null;
+    this.offscreen2AttStride = null;
     /**
      * uniform 変数のロケーションを保持するオブジェクト
      * @type {object.<WebGLUniformLocation>}
      */
     this.renderUniLocation = null;
-    this.offscreenUniLocation = null;
+    this.offscreen1UniLocation = null;
+    this.offscreen2UniLocation = null;
     /**
      * plane ジオメトリの情報を保持するオブジェクト
      * @type {object}
@@ -131,7 +135,8 @@ class App {
      * フレームバッファ関連オブジェクトの格納用（配列） @@@
      * @type {Array.<object>}
      */
-    this.framebufferArray = [];
+    this.offscreen1FramebufferArray = [];
+    this.offscreen2FramebufferArray = [];
     /**
      * レンダリングを行うかどうかのフラグ
      * @type {boolean}
@@ -161,7 +166,7 @@ class App {
     this.offscreenMousepos = {
       x: 0, y: 0
     }
-    this.mousepos = [.0, .0];
+    this.mousepos = [.5, .5];
 
     this.texPos = 3;
     this.timeRange = .8;
@@ -224,8 +229,17 @@ class App {
     this.hypotenuseLenght = Math.sqrt(Math.pow(window.innerWidth, 2) + Math.pow(window.innerHeight, 2))
 
     // フレームバッファもサイズをキャンバスに合わせる
-    if (this.framebufferArray != null) {
-      this.framebufferArray.forEach((buffer) => {
+    const offscreenFramebuffer = [...this.offscreen1FramebufferArray, ...this.offscreen2FramebufferArray];
+    if (offscreenFramebuffer.length != 0) {
+      this.offscreen1FramebufferArray.forEach((buffer) => {
+        WebGLUtility.deleteFramebuffer(
+          this.gl,
+          buffer.framebuffer,
+          buffer.renderbuffer,
+          buffer.texture,
+        );
+      });
+      this.offscreen2FramebufferArray.forEach((buffer) => {
         WebGLUtility.deleteFramebuffer(
           this.gl,
           buffer.framebuffer,
@@ -236,7 +250,7 @@ class App {
     }
 
     // 削除したあとに新しくフレームバッファを生成する
-    this.framebufferArray = [
+    this.offscreen1FramebufferArray = [
       WebGLUtility.createFramebuffer(this.gl, this.canvas.width, this.canvas.height),
       WebGLUtility.createFramebuffer(this.gl, this.canvas.width, this.canvas.height),
       WebGLUtility.createFramebuffer(this.gl, this.canvas.width, this.canvas.height),
@@ -245,6 +259,9 @@ class App {
       WebGLUtility.createFramebuffer(this.gl, this.canvas.width, this.canvas.height),
       WebGLUtility.createFramebuffer(this.gl, this.canvas.width, this.canvas.height),
       WebGLUtility.createFramebuffer(this.gl, this.canvas.width, this.canvas.height),
+      WebGLUtility.createFramebuffer(this.gl, this.canvas.width, this.canvas.height),
+    ];
+    this.offscreen2FramebufferArray = [
       WebGLUtility.createFramebuffer(this.gl, this.canvas.width, this.canvas.height),
     ];
   }
@@ -269,7 +286,16 @@ class App {
         })
         .then((fragmentShaderSource) => {
           fs = WebGLUtility.createShaderObject(gl, fragmentShaderSource, gl.FRAGMENT_SHADER);
-          this.offscreenProgram = WebGLUtility.createProgramObject(gl, vs, fs);
+          this.offscreenProgram1 = WebGLUtility.createProgramObject(gl, vs, fs);
+          return WebGLUtility.loadFile('./shader/offscreen2.vert')
+        })
+        .then((vertexShaderSource) => {
+          vs = WebGLUtility.createShaderObject(gl, vertexShaderSource, gl.VERTEX_SHADER);
+          return WebGLUtility.loadFile('./shader/offscreen2.frag');
+        })
+        .then((fragmentShaderSource) => {
+          fs = WebGLUtility.createShaderObject(gl, fragmentShaderSource, gl.FRAGMENT_SHADER);
+          this.offscreenProgram2 = WebGLUtility.createProgramObject(gl, vs, fs);
           return WebGLUtility.loadFile('./shader/main.vert')
         })
         .then((vertexShaderSource) => {
@@ -346,22 +372,38 @@ class App {
   setupLocation() {
     const gl = this.gl;
     // レンダリング用のセットアップ
-    this.offscreenAttLocation = [
-      gl.getAttribLocation(this.offscreenProgram, 'position'),
-      gl.getAttribLocation(this.offscreenProgram, 'texCoord'),
+    this.offscreen1AttLocation = [
+      gl.getAttribLocation(this.offscreenProgram1, 'position'),
+      gl.getAttribLocation(this.offscreenProgram1, 'texCoord'),
     ];
-    this.offscreenAttStride = [3, 2];
-    this.offscreenUniLocation = {
-      mMatrix: gl.getUniformLocation(this.offscreenProgram, 'mMatrix'), // 
-      mvpMatrix: gl.getUniformLocation(this.offscreenProgram, 'mvpMatrix'), // 
-      texPos: gl.getUniformLocation(this.offscreenProgram, 'texPos'), // テクスチャユニット
-      time: gl.getUniformLocation(this.offscreenProgram, 'time'), // テクスチャユニット
-      effect: gl.getUniformLocation(this.offscreenProgram, 'effect'), // テクスチャユニット
-      noiseTexture: gl.getUniformLocation(this.offscreenProgram, 'noiseTexture'),
+    this.offscreen1AttStride = [3, 2];
+    this.offscreen1UniLocation = {
+      mMatrix: gl.getUniformLocation(this.offscreenProgram1, 'mMatrix'), // 
+      mvpMatrix: gl.getUniformLocation(this.offscreenProgram1, 'mvpMatrix'), // 
+      texPos: gl.getUniformLocation(this.offscreenProgram1, 'texPos'), // テクスチャユニット
+      time: gl.getUniformLocation(this.offscreenProgram1, 'time'), // テクスチャユニット
+      effect: gl.getUniformLocation(this.offscreenProgram1, 'effect'), // テクスチャユニット
+      noiseTexture: gl.getUniformLocation(this.offscreenProgram1, 'noiseTexture'),
     };
     [...Array(2)].forEach((_, idx) => {
       const key = `textureUnit${idx + 1}`;
-      this.offscreenUniLocation[key] = gl.getUniformLocation(this.offscreenProgram, key)
+      this.offscreen1UniLocation[key] = gl.getUniformLocation(this.offscreenProgram1, key)
+    })
+
+    this.offscreen2AttLocation = [
+      gl.getAttribLocation(this.offscreenProgram2, 'position'),
+      gl.getAttribLocation(this.offscreenProgram2, 'texCoord'),
+    ];
+    this.offscreen2AttStride = [3, 2];
+    this.offscreen2UniLocation = {
+      mouse: gl.getUniformLocation(this.offscreenProgram2, 'mouse'), // テクスチャユニット
+      resolution: gl.getUniformLocation(this.offscreenProgram2, 'resolution'), // テクスチャユニット
+      noiseTexture: gl.getUniformLocation(this.offscreenProgram2, 'noiseTexture'),
+      time: gl.getUniformLocation(this.offscreenProgram2, 'time'),
+    };
+    [...Array(this.offscreen1FramebufferArray.length)].forEach((_, idx) => {
+      const key = `textureUnit${idx + 1}`;
+      this.offscreen2UniLocation[key] = gl.getUniformLocation(this.offscreenProgram2, `textureUnit[${idx}]`)
     })
 
     this.renderAttLocation = [
@@ -372,13 +414,10 @@ class App {
     this.renderUniLocation = {
       mouse: gl.getUniformLocation(this.renderProgram, 'mouse'), // テクスチャユニット
       resolution: gl.getUniformLocation(this.renderProgram, 'resolution'), // テクスチャユニット
+      textureUnit1: gl.getUniformLocation(this.renderProgram, 'textureUnit1'),
       noiseTexture: gl.getUniformLocation(this.renderProgram, 'noiseTexture'),
       time: gl.getUniformLocation(this.renderProgram, 'time'),
     };
-    [...Array(this.framebufferArray.length)].forEach((_, idx) => {
-      const key = `textureUnit${idx + 1}`;
-      this.renderUniLocation[key] = gl.getUniformLocation(this.renderProgram, `textureUnit[${idx}]`)
-    })
   }
 
   /**
@@ -388,7 +427,7 @@ class App {
   setupFirstOffscreenRendering(idx) {
     const gl = this.gl;
     // ０番目のフレームバッファをバインドして描画の対象とする
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebufferArray[idx].framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.offscreen1FramebufferArray[idx].framebuffer);
     // ビューポートを設定する
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     // クリアする色と深度を設定する
@@ -397,7 +436,7 @@ class App {
     // 色と深度をクリアする
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     // プログラムオブジェクトを選択
-    gl.useProgram(this.offscreenProgram);
+    gl.useProgram(this.offscreenProgram1);
     // スフィアに貼るテクスチャをバインドする
     [...Array(3)].forEach((_, i) => {
       gl.activeTexture(gl[`TEXTURE${i}`]);
@@ -411,7 +450,27 @@ class App {
     const gl = this.gl;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     // １番目のフレームバッファをバインドして描画の対象とする
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebufferArray[1].framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.offscreen2FramebufferArray[0].framebuffer);
+    // 色と深度をクリアする
+    gl.clearColor(1.0, .0, .0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // プログラムオブジェクトを選択
+    gl.useProgram(this.offscreenProgram2);
+    // setupFirstOffscreenRendering で描画した結果をバインドする
+    [...Array(this.offscreen1FramebufferArray.length)].forEach((_, idx) => {
+      gl.activeTexture(gl[`TEXTURE${idx}`]);
+      gl.bindTexture(gl.TEXTURE_2D, this.offscreen1FramebufferArray[idx].texture);
+    })
+    gl.activeTexture(gl[`TEXTURE${this.offscreen1FramebufferArray.length}`]);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture[this.texture.length - 1]);
+  }
+
+  setupRendering() {
+    const gl = this.gl;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // １番目のフレームバッファをバインドして描画の対象とする
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, this.offscreen1FramebufferArray[1].framebuffer);
     // 色と深度をクリアする
     gl.clearColor(1.0, .0, .0, 1.0);
     gl.clearDepth(1.0);
@@ -419,12 +478,8 @@ class App {
     // プログラムオブジェクトを選択
     gl.useProgram(this.renderProgram);
     // setupFirstOffscreenRendering で描画した結果をバインドする
-    [...Array(this.framebufferArray.length)].forEach((_, idx) => {
-      gl.activeTexture(gl[`TEXTURE${idx}`]);
-      gl.bindTexture(gl.TEXTURE_2D, this.framebufferArray[idx].texture);
-    })
-    gl.activeTexture(gl[`TEXTURE${this.framebufferArray.length}`]);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture[this.texture.length - 1]);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.offscreen2FramebufferArray[0].texture);
   }
 
   /**
@@ -463,7 +518,7 @@ class App {
     // 現在までの経過時間
     const nowTime = (Date.now() - this.startTime) * 0.0001;
 
-    [...Array(this.framebufferArray.length)].forEach((_, pIdx) => {
+    [...Array(this.offscreen1FramebufferArray.length)].forEach((_, pIdx) => {
 
       // - 一番最初のオフスクリーンレンダリング ---------------------------------
       {
@@ -487,21 +542,21 @@ class App {
         const mvp = m4.multiply(vp, m);
   
         // VBO と IBO
-        WebGLUtility.enableBuffer(gl, this.planeVBO, this.offscreenAttLocation, this.offscreenAttStride, this.planeIBO);
+        WebGLUtility.enableBuffer(gl, this.planeVBO, this.offscreen1AttLocation, this.offscreen1AttStride, this.planeIBO);
         // シェーダに各種パラメータを送る
-        gl.uniformMatrix4fv(this.offscreenUniLocation.mMatrix, false, m);
-        gl.uniformMatrix4fv(this.offscreenUniLocation.mvpMatrix, false, mvp);
+        gl.uniformMatrix4fv(this.offscreen1UniLocation.mMatrix, false, m);
+        gl.uniformMatrix4fv(this.offscreen1UniLocation.mvpMatrix, false, mvp);
         if (this.texPos != Math.floor(nowTime) % 3) {
           this.texPos = Math.floor(nowTime) % 3;
           this.changeTime = nowTime;
         }
-        gl.uniform1i(this.offscreenUniLocation.textureUnit1, this.texPos);
-        gl.uniform1i(this.offscreenUniLocation.textureUnit2, (this.texPos + 1) % 3);
+        gl.uniform1i(this.offscreen1UniLocation.textureUnit1, this.texPos);
+        gl.uniform1i(this.offscreen1UniLocation.textureUnit2, (this.texPos + 1) % 3);
         const time = (Math.sin(nowTime - this.changeTime) + 1.0) - 1;
-        gl.uniform1f(this.offscreenUniLocation.time, Math.min(Math.max(.0, (time - .3) / .5), 1.0));
+        gl.uniform1f(this.offscreen1UniLocation.time, Math.min(Math.max(.0, (time - .3) / .5), 1.0));
 
-        gl.uniform1i(this.offscreenUniLocation.effect, pIdx);
-        gl.uniform1i(this.offscreenUniLocation.noiseTexture, 4);
+        gl.uniform1i(this.offscreen1UniLocation.effect, pIdx);
+        gl.uniform1i(this.offscreen1UniLocation.noiseTexture, 4);
   
         // 描画
         gl.drawElements(gl.TRIANGLES, this.planeGeometry.index.length, gl.UNSIGNED_SHORT, 0);
@@ -512,12 +567,25 @@ class App {
     {
       this.setupSecondOffscreenRendering()
 
+      WebGLUtility.enableBuffer(gl, this.panelVBO, this.offscreen2AttLocation, this.offscreen2AttStride, this.panelIBO);
+      // シェーダに各種パラメータを送る
+      [...Array(this.offscreen1FramebufferArray.length)].forEach((_, idx) => {
+        gl.uniform1i(this.offscreen2UniLocation[`textureUnit${idx + 1}`], idx);
+      })
+      gl.uniform1i(this.offscreen2UniLocation.noiseTexture, this.offscreen1FramebufferArray.length);
+      gl.uniform2fv(this.offscreen2UniLocation.mouse, this.mousepos);
+      gl.uniform1f(this.offscreen2UniLocation.time, nowTime);
+      gl.uniform2fv(this.offscreen2UniLocation.resolution, [this.canvas.width, this.canvas.height]);
+      // 描画
+      gl.drawElements(gl.TRIANGLES, this.panelGeometry.index.length, gl.UNSIGNED_SHORT, 0);
+    }
+
+    {
+      this.setupRendering()
+
       WebGLUtility.enableBuffer(gl, this.panelVBO, this.renderAttLocation, this.renderAttStride, this.panelIBO);
       // シェーダに各種パラメータを送る
-      [...Array(this.framebufferArray.length)].forEach((_, idx) => {
-        gl.uniform1i(this.renderUniLocation[`textureUnit${idx + 1}`], idx);
-      })
-      gl.uniform1i(this.renderUniLocation.noiseTexture, this.framebufferArray.length);
+      gl.uniform1i(this.renderUniLocation.textureUnit1, 0);
       gl.uniform2fv(this.renderUniLocation.mouse, this.mousepos);
       gl.uniform1f(this.renderUniLocation.time, nowTime);
       gl.uniform2fv(this.renderUniLocation.resolution, [this.canvas.width, this.canvas.height]);
